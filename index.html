@@ -1,5 +1,34 @@
 <!doctype html>
 <html lang="en">
+<!--
+This HTML file serves as the frontend template for Jersey Post's rate card terms page.
+
+- Purpose: Dynamically fetch and display rate card terms and related content from a backend API
+  using HTMX and Mustache templates for client-side rendering.
+
+- Key Features:
+  1. Dynamically retrieves and injects content for headers, footers, and main content areas via HTMX
+     requests to specified endpoints.
+  2. Supports the inclusion of external assets such as stylesheets, fonts, and scripts to enhance
+     the user interface.
+  3. Provides dynamic URL and token management for API requests, using JavaScript to populate
+     headers and parameters.
+  4. Implements responsive design via Bootstrap and Pico CSS for an optimized user experience across devices.
+
+- Core Dependencies:
+  - HTMX for handling AJAX requests and rendering templates.
+  - Mustache for client-side templating.
+  - Bootstrap and Pico CSS for styling.
+  - Typekit for font loading.
+
+- Dynamic Behavior:
+  - Query parameters (e.g., '?slug=') determine the specific content retrieved and displayed.
+  - Uses custom event listeners to configure and manipulate HTMX requests.
+
+- Use Case: Primarily used to display and manage Jersey Post's rate card terms, headers, footers, 
+  and additional informational content dynamically from backend APIs.
+-->
+
 
 <head>
   <meta charset="utf-8">
@@ -115,7 +144,7 @@
     slug = params.get('slug')
   } else {
     //slug = "termsandconditions1";
-    slug = "td-priority-whistl"
+    slug = "td-priority1"
   }
 
 
@@ -148,8 +177,8 @@
   <!--<header class="jp-header" hx-get="/singletons/get/termspageheader" hx-trigger="load" hx-ext="client-side-templates"
     mustache-template="htmlSimpleTemplate">-->
 
-    <header class="jp-header" hx-get="/collections/get/htmlsnippets?filter[slug]=terms-page-header" hx-trigger="load" hx-ext="client-side-templates"
-    mustache-template="htmlSimpleTemplate">
+  <header class="jp-header" hx-get="/htmlsnippets?filter[slug]=terms-page-header" hx-trigger="load"
+    hx-ext="client-side-templates" mustache-template="htmlSimpleTemplate">
 
 
   </header>
@@ -167,7 +196,7 @@
 
   <main class="container">
 
-    <div class="container" hx-get="/collections/get/ratecardTerms?filter[slug]={{slug}}" hx-trigger="load"
+    <div class="container" hx-get="/ratecardterms?filter[slug]={{slug}}" hx-trigger="load"
       hx-ext="client-side-templates" hx-target="#content" mustache-template="CollectionHtmlContentTemplate">
 
       <div id="content">
@@ -191,39 +220,43 @@
 
 
 
-  <!--<footer hx-get="/singletons/get/termspagefooter" hx-trigger="load" hx-ext="client-side-templates"
-    mustache-template="htmlSimpleTemplate">
-  </footer>-->
-
-  <footer hx-get="/collections/get/htmlsnippets?filter[slug]=terms-page-footer" hx-trigger="load" hx-ext="client-side-templates"
+  <footer hx-get="/htmlsnippets?filter[slug]=terms-page-footer" hx-trigger="load" hx-ext="client-side-templates"
     mustache-template="htmlSimpleTemplate">
   </footer>
 
 
   <script>
-    //var COCKPITAPIURL="https://phpstack-676167-2221902.cloudwaysapps.com/cockpit/api/"
-    ///var COCKPITAPIURL = "https://cp2.feeed.com/cockpit-core/api"
-    //var COCKPITAPIURL = "https://cp2.feeed.com/cockpit-next/api";
-    //var COCKPITAPIURL = "https://20.68.233.22/cockpit-next/api";
-    var COCKPITAPIURL = "https://cockpit.jerseypost.com/cockpit-next/api";
-    //var COCKPITTOKEN = "API-5d68fdce4797f108f759f56c765dde7b03ce13e3"
-    ///var COCKPITTOKEN = "USR-7d349ef9839e7d86f052205eb77fea61ae8a2b1a";
-    //var COCKPITTOKEN = "1849b1e9339a346ec7804f5a5dc0dd";
-    var COCKPITTOKEN = "8f9b23c1b5b52ea4aa2dce60a7c5bb"; // http://20.68.233.22/cockpit-next
+    //var COCKPITAPIURL = "https://cockpit.jerseypost.com/cockpit-next/api";
+    const NAPIAPIURL = "https://napi.jerseypost.com/api";
+    const NAPIAPIURLTEST = "https://napi.jerseypost.com/api-test";
+    //var COCKPITTOKEN = "8f9b23c1b5b52ea4aa2dce60a7c5bb"; // http://20.68.233.22/cockpit-next
+    const NAPITOKENLIVE = "22a7c76f-7c4a-49b0-a6ad-813c5094d8cd"; // for x-jp-api-token Header - PROD
+    const NAPITOKENTEST = "9000c01c-8009-493b-b7ab-6e4d107ba97a"; // for x-jp-api-token Header - TEST
+    //const ENVMODE = "test";
+    const ENVMODE = "live";
 
     /**
-     * Supports prefixing all HTMX requests with base Cockpit URL (if http* not already specified)
+     * Supports prefixing all HTMX requests with base URL (if http* not already specified)
      * Also replaces {{slug}} with value of querystring param '?slug='
      * Also popluates the api-key
      */
     document.body.addEventListener('htmx:configRequest', function (evt) {
       //alert(evt.detail.path);
-      if (!evt.detail.path.startsWith('http')) {
-        evt.detail.path = COCKPITAPIURL + evt.detail.path
+
+      if (ENVMODE && ENVMODE.toLowerCase() == "test") {
+        if (!evt.detail.path.startsWith('http')) {
+          evt.detail.path = NAPIAPIURLTEST + evt.detail.path
+        }
+        evt.detail.headers['x-jp-api-token'] = NAPITOKENTEST; // for napi authentication
+        evt.detail.headers['x-jp-environment'] = 'TEST'; // for napi environment  
+      } else {
+        if (!evt.detail.path.startsWith('http')) {
+          evt.detail.path = NAPIAPIURL + evt.detail.path
+        }
+        evt.detail.headers['x-jp-api-token'] = NAPITOKENLIVE; // for napi authentication
       }
       evt.detail.path = evt.detail.path.replace("{{slug}}", slug);
-      evt.detail.headers['api-key'] = COCKPITTOKEN; // for Cockpit V2
-      evt.detail.headers['Cockpit-Token'] = COCKPITTOKEN; // for Cockpit Next
+
     });
   </script>
 
@@ -236,6 +269,11 @@
   <script src="https://unpkg.com/htmx.org@1.8.0"
     integrity="sha384-cZuAZ+ZbwkNRnrKi05G/fjBX+azI9DNOkNYysZ0I/X5ZFgsmMiBXgDZof30F5ofc"
     crossorigin="anonymous"></script>
+
+  <!--<script src="https://unpkg.com/htmx.org@2.0.3" 
+    integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" 
+    crossorigin="anonymous"></script>-->
+
 
   <script src="https://unpkg.com/htmx.org/dist/ext/client-side-templates.js"></script>
   <script src="https://unpkg.com/mustache@latest"></script>
